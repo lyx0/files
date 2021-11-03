@@ -2,18 +2,30 @@ package main
 
 import (
 	"context"
-	"log"
+	"html/template"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
+
+var tpl *template.Template
 
 func main() {
 	r := mux.NewRouter()
 
+	// Template
+	templ, err := tpl.ParseFiles("index.html")
+	if err != nil {
+		log.Error(err)
+	}
+
+	templ.Execute(w, "index.html", nil)
+
+	//
 	http.HandleFunc("/", UploadHandler)
 
 	srv := &http.Server{
@@ -48,5 +60,13 @@ func main() {
 
 func UploadHandler(rw http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		log.Error(err)
+	}
+
+	log.Info(file)
+	log.Info(header)
 
 }
