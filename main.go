@@ -21,9 +21,11 @@ func init() {
 func main() {
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
 	nu := handlers.NewUploader(l)
+	ni := handlers.NewIndex(l)
 
 	sm := http.NewServeMux()
 	sm.Handle("/upload", nu)
+	sm.Handle("/", ni)
 
 	s := &http.Server{
 		Addr:         ":9090",
@@ -45,8 +47,11 @@ func main() {
 	signal.Notify(sigChan, os.Kill)
 
 	sig := <-sigChan
-	l.Println("Received terimnate", sig)
+	l.Println("Received terminate", sig)
 
-	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	tc, err := context.WithTimeout(context.Background(), 30*time.Second)
+	if err != nil {
+		l.Fatal(err)
+	}
 	s.Shutdown(tc)
 }
