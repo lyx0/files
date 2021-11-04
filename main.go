@@ -2,71 +2,46 @@ package main
 
 import (
 	"context"
-	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+	"github.com/lyx0/files/handlers"
 )
 
-var tpl *template.Template
-
 func main() {
-	r := mux.NewRouter()
+	l := log.New(os.Stdout, "product-api", log.LstdFlags)
+	nh := handlers.NewHello(l)
+	ng := handlers.NewGoodbye(l)
 
-	// Template
-	templ, err := tpl.ParseFiles("index.html")
-	if err != nil {
-		log.Error(err)
-	}
+	sm := http.NewServeMux()
+	sm.Handle("/", nh)
+	sm.Handle("/goodbye", ng)
 
-	templ.Execute(w, "index.html", nil)
-
-	//
-	http.HandleFunc("/", UploadHandler)
-
-	srv := &http.Server{
-		Handler:      r,
-		Addr:         "127.0.0.1:8080",
-		WriteTimeout: 30 * time.Second,
-		ReadTimeout:  30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+	s := &http.Server{
+		Addr:         ":9090",
+		Handler:      sm,
+		IdleTimeout:  120 * time.Second,
+		WriteTimeout: 1 * time.Second,
+		ReadTimeout:  1 * time.Second,
 	}
 
 	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			log.Println(err)
+		err := s.ListenAndServe()
+		if err != nil {
+			l.Fatal(err)
 		}
 	}()
 
-	c := make(chan os.Signal, 1)
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt)
+	signal.Notify(sigChan, os.Kill)
 
-	signal.Notify(c, os.Interrupt)
+	sig := <-sigChan
+	l.Println("Received terinate", sig)
 
-	<-c
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	srv.Shutdown(ctx)
-
-	log.Println("shutting down")
-	os.Exit(0)
-
-}
-
-func UploadHandler(rw http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
-	file, header, err := r.FormFile("file")
-	if err != nil {
-		log.Error(err)
-	}
-
-	log.Info(file)
-	log.Info(header)
-
+	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	s.Shutdown(tc)
 }
