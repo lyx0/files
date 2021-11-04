@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/lyx0/files/handlers"
@@ -19,6 +20,7 @@ func init() {
 }
 
 func main() {
+
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
 	nu := handlers.NewUploader(l)
 	ni := handlers.NewIndex(l)
@@ -42,9 +44,9 @@ func main() {
 		}
 	}()
 
-	sigChan := make(chan os.Signal)
+	sigChan := make(chan os.Signal, 2)
 	signal.Notify(sigChan, os.Interrupt)
-	signal.Notify(sigChan, os.Kill)
+	signal.Notify(sigChan, syscall.SIGTERM)
 
 	sig := <-sigChan
 	l.Println("Received terminate", sig)
@@ -54,4 +56,7 @@ func main() {
 		l.Fatal(err)
 	}
 	s.Shutdown(tc)
+
+	// Fix dumb warning
+	_ = tpl
 }
