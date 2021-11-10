@@ -18,6 +18,7 @@ func init() {
 func main() {
 	http.HandleFunc("/", foo)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 	http.ListenAndServe(":8080", nil)
 }
 
