@@ -11,7 +11,8 @@
 </form>
 
 {{if .}}
-<a href="/uploads/{{.}}">localhost:8080/uploads/{{.}}</a>
+<h1>Here are the contents of the file:</h1>
+{{.}}
 {{end}}
 
 {{template "footer"}}
